@@ -14,15 +14,69 @@ import shutil
 DB_DIR = "app_src/Photos"
 DEVICE = "cpu"
 
-st.set_page_config(page_title="AI 圖片比對助手", layout="centered")
-st.title("🖼️ AI 圖片相似度比對器")
+st.set_page_config(
+    page_title="AI 圖片比對助手",
+    layout="centered"
+)
 
 # ==============================
-# 載入 CLIP（真正的圖片模型）
+# 🎨 全站 UI 美化（CSS）
+# ==============================
+st.markdown("""
+<style>
+.stApp {
+    background: linear-gradient(135deg, #f8f9fa, #eef2f7);
+}
+
+.card {
+    background: white;
+    padding: 1.6rem;
+    border-radius: 18px;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.08);
+    margin-bottom: 1.6rem;
+}
+
+.admin {
+    border: 2px dashed #cbd5e1;
+    background: #fafafa;
+}
+
+h1 {
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.3em 0.8em;
+    border-radius: 999px;
+    background: #4CAF50;
+    color: white;
+    font-size: 0.8rem;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ==============================
+# 🏠 首頁介紹
+# ==============================
+st.markdown("""
+<div class="card">
+<h1>🖼️ AI 圖片相似度比對系統</h1>
+<p>
+本系統結合 <b>OpenCLIP AI 視覺模型</b>，<br>
+可用於 <b>陶藝作品管理、相似作品搜尋與比對</b>。
+</p>
+<span class="badge">AI Image Retrieval</span>
+</div>
+""", unsafe_allow_html=True)
+
+# ==============================
+# 載入 CLIP 模型
 # ==============================
 @st.cache_resource
 def load_clip():
-    with st.spinner("載入 AI 圖片模型中（首次較久）..."):
+    with st.spinner("🤖 載入 AI 圖片模型中（首次較久）..."):
         model, _, preprocess = open_clip.create_model_and_transforms(
             "ViT-B-32",
             pretrained="openai"
@@ -54,7 +108,7 @@ def get_exif_time(image_path):
         return "未知時間"
 
 # ==============================
-# 載入資料庫圖片特徵
+# 載入舊照片特徵庫
 # ==============================
 @st.cache_data
 def load_database():
@@ -75,7 +129,7 @@ def load_database():
     features = []
     valid_paths = []
 
-    progress = st.progress(0.0, "正在建立圖片特徵庫...")
+    progress = st.progress(0.0, "📂 建立圖片特徵庫中...")
     for i, p in enumerate(paths):
         try:
             img = preprocess(Image.open(p).convert("RGB")).unsqueeze(0)
@@ -92,16 +146,24 @@ def load_database():
     return torch.cat(features), valid_paths
 
 db_features, db_paths = load_database()
-st.success(f"✅ 已載入 {len(db_paths)} 張舊照片")
-st.divider()
+
+st.markdown(f"""
+<div class="card">
+✅ 已載入 <b>{len(db_paths)}</b> 張舊照片
+</div>
+""", unsafe_allow_html=True)
 
 # ==============================
-# 上傳 & 比對
+# 📤 上傳新照片比對
 # ==============================
+st.markdown('<div class="card">', unsafe_allow_html=True)
+st.subheader("📤 上傳新照片進行比對")
+
 uploaded = st.file_uploader(
-    "👉 上傳新照片進行比對",
+    "支援 JPG / PNG，請選擇一張照片",
     type=["jpg", "jpeg", "png"]
 )
+st.markdown('</div>', unsafe_allow_html=True)
 
 if uploaded:
     temp_dir = "temp_upload"
@@ -112,9 +174,9 @@ if uploaded:
         f.write(uploaded.getbuffer())
 
     try:
-        st.image(uploaded, caption="您上傳的照片", width=300)
+        st.image(uploaded, caption="您上傳的照片", width=320)
 
-        with st.spinner("AI 比對中..."):
+        with st.spinner("🔍 AI 比對中..."):
             img = preprocess(Image.open(temp_path).convert("RGB")).unsqueeze(0)
             with torch.no_grad():
                 q_feat = model.encode_image(img.to(DEVICE))
@@ -127,32 +189,34 @@ if uploaded:
             best_score = scores[idx].item()
             best_time = get_exif_time(best_path)
 
-        st.subheader("🔍 比對結果")
-        col1, col2 = st.columns(2)
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.subheader("🔍 AI 比對結果")
+
+        col1, col2 = st.columns([1.2, 1])
 
         with col1:
-            st.image(best_path, caption="最相似舊照片", use_container_width=True)
+            st.image(best_path, caption="最相似的舊照片", use_container_width=True)
 
         with col2:
-            st.write(f"📄 檔名：**{os.path.basename(best_path)}**")
-            st.write(f"📅 時間：**{best_time}**")
-            st.write("📊 相似度")
+            st.metric("相似度", f"{best_score:.2f}")
             st.progress(int(best_score * 100))
-            st.write(f"**{best_score:.4f}**")
+            st.write(f"📄 **檔名**：{os.path.basename(best_path)}")
+            st.write(f"📅 **時間**：{best_time}")
+
+        st.markdown('</div>', unsafe_allow_html=True)
 
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
 
 # ==============================
-# 6. 🔐 新增舊照片到資料庫（進階）
+# 🔐 管理者功能
 # ==============================
-st.divider()
-st.subheader("📥 新增舊照片到資料庫（管理功能）")
-
-st.caption("⚠️ 此功能用於展示與管理，重新部署後需重新上傳")
+st.markdown('<div class="card admin">', unsafe_allow_html=True)
+st.subheader("🔐 管理者功能｜新增舊照片")
+st.caption("此功能用於展示與管理，重新部署後需重新上傳")
 
 admin_upload = st.file_uploader(
-    "選擇要加入舊照片庫的圖片（JPG / PNG）",
+    "選擇要加入舊照片庫的圖片",
     type=["jpg", "jpeg", "png"],
     key="admin_uploader"
 )
@@ -160,23 +224,17 @@ admin_upload = st.file_uploader(
 if admin_upload:
     save_path = os.path.join(DB_DIR, admin_upload.name)
 
-    # 避免覆蓋同名檔案
     if os.path.exists(save_path):
-        st.warning("⚠️ 此檔名已存在，請更換檔名後再上傳")
+        st.warning("⚠️ 檔名已存在，請更換後再上傳")
     else:
         with open(save_path, "wb") as f:
             f.write(admin_upload.getbuffer())
 
         st.success(f"✅ 已加入舊照片庫：{admin_upload.name}")
-        st.info("🔄 正在重新載入資料庫，請稍候...")
-
-        # 清除快取，強制重新計算特徵
         st.cache_data.clear()
-
-        # 重新執行 App
         st.rerun()
 
-
+st.markdown('</div>', unsafe_allow_html=True)
 
 
 
