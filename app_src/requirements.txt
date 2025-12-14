@@ -1,6 +1,6 @@
-torch
-Pillow
-exifread
-glob2
-sentence-transformers
 streamlit
+torch
+torchvision
+Pillow
+open-clip-torch
+exifread
