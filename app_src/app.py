@@ -15,59 +15,41 @@ DB_DIR = "app_src/Photos"
 DEVICE = "cpu"
 
 st.set_page_config(
-    page_title="AI 圖片比對助手",
+    page_title="AI 圖片相似度比對",
     layout="centered"
 )
 
 # ==============================
-# 🎨 全站 UI 美化（CSS）
+# 🎨 極簡 UI 樣式（乾淨版）
 # ==============================
 st.markdown("""
 <style>
 .stApp {
-    background: linear-gradient(135deg, #f8f9fa, #eef2f7);
+    background: #f5f7fb;
 }
 
 .card {
     background: white;
-    padding: 1.6rem;
-    border-radius: 18px;
-    box-shadow: 0 10px 28px rgba(0,0,0,0.08);
-    margin-bottom: 1.6rem;
-}
-
-.admin {
-    border: 2px dashed #cbd5e1;
-    background: #fafafa;
+    padding: 1.4rem 1.6rem;
+    border-radius: 14px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+    margin-bottom: 1.2rem;
 }
 
 h1 {
-    font-weight: 800;
-    letter-spacing: 1px;
-}
-
-.badge {
-    display: inline-block;
-    padding: 0.3em 0.8em;
-    border-radius: 999px;
-    background: #4CAF50;
-    color: white;
-    font-size: 0.8rem;
+    font-size: 1.8rem;
+    margin-bottom: 0.3rem;
 }
 </style>
 """, unsafe_allow_html=True)
 
 # ==============================
-# 🏠 首頁介紹
+# 🏠 首頁
 # ==============================
 st.markdown("""
 <div class="card">
 <h1>🖼️ AI 圖片相似度比對系統</h1>
-<p>
-本系統結合 <b>OpenCLIP AI 視覺模型</b>，<br>
-可用於 <b>陶藝作品管理、相似作品搜尋與比對</b>。
-</p>
-<span class="badge">AI Image Retrieval</span>
+<p>使用 AI 分析圖片特徵，快速找到最相似的作品。</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -76,7 +58,7 @@ st.markdown("""
 # ==============================
 @st.cache_resource
 def load_clip():
-    with st.spinner("🤖 載入 AI 圖片模型中（首次較久）..."):
+    with st.spinner("🤖 載入 AI 模型中（首次稍久）..."):
         model, _, preprocess = open_clip.create_model_and_transforms(
             "ViT-B-32",
             pretrained="openai"
@@ -108,12 +90,12 @@ def get_exif_time(image_path):
         return "未知時間"
 
 # ==============================
-# 載入舊照片特徵庫
+# 載入資料庫圖片特徵
 # ==============================
 @st.cache_data
 def load_database():
     if not os.path.exists(DB_DIR):
-        st.error(f"❌ 找不到資料夾：{DB_DIR}")
+        st.error(f"找不到資料夾：{DB_DIR}")
         st.stop()
 
     paths = (
@@ -123,14 +105,13 @@ def load_database():
     )
 
     if not paths:
-        st.error("❌ Photos 資料夾沒有圖片")
+        st.error("Photos 資料夾沒有圖片")
         st.stop()
 
     features = []
     valid_paths = []
 
-    progress = st.progress(0.0, "📂 建立圖片特徵庫中...")
-    for i, p in enumerate(paths):
+    for p in paths:
         try:
             img = preprocess(Image.open(p).convert("RGB")).unsqueeze(0)
             with torch.no_grad():
@@ -140,8 +121,6 @@ def load_database():
             valid_paths.append(p)
         except:
             pass
-        progress.progress((i + 1) / len(paths))
-    progress.empty()
 
     return torch.cat(features), valid_paths
 
@@ -154,15 +133,17 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ==============================
-# 📤 上傳新照片比對
+# 📤 上傳新照片（唯一一個上傳框）
 # ==============================
 st.markdown('<div class="card">', unsafe_allow_html=True)
-st.subheader("📤 上傳新照片進行比對")
+st.subheader("📤 上傳照片進行比對")
 
 uploaded = st.file_uploader(
-    "支援 JPG / PNG，請選擇一張照片",
-    type=["jpg", "jpeg", "png"]
+    "",
+    type=["jpg", "jpeg", "png"],
+    label_visibility="collapsed"
 )
+
 st.markdown('</div>', unsafe_allow_html=True)
 
 if uploaded:
@@ -174,7 +155,7 @@ if uploaded:
         f.write(uploaded.getbuffer())
 
     try:
-        st.image(uploaded, caption="您上傳的照片", width=320)
+        st.image(uploaded, caption="你上傳的照片", width=320)
 
         with st.spinner("🔍 AI 比對中..."):
             img = preprocess(Image.open(temp_path).convert("RGB")).unsqueeze(0)
@@ -190,7 +171,7 @@ if uploaded:
             best_time = get_exif_time(best_path)
 
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.subheader("🔍 AI 比對結果")
+        st.subheader("🔍 比對結果")
 
         col1, col2 = st.columns([1.2, 1])
 
@@ -200,8 +181,8 @@ if uploaded:
         with col2:
             st.metric("相似度", f"{best_score:.2f}")
             st.progress(int(best_score * 100))
-            st.write(f"📄 **檔名**：{os.path.basename(best_path)}")
-            st.write(f"📅 **時間**：{best_time}")
+            st.write(f"📄 檔名：{os.path.basename(best_path)}")
+            st.write(f"📅 時間：{best_time}")
 
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -209,34 +190,27 @@ if uploaded:
         shutil.rmtree(temp_dir, ignore_errors=True)
 
 # ==============================
-# 🔐 管理者功能
+# 🔐 Sidebar 管理者功能（乾淨）
 # ==============================
-st.markdown('<div class="card admin">', unsafe_allow_html=True)
-st.subheader("🔐 管理者功能｜新增舊照片")
-st.caption("此功能用於展示與管理，重新部署後需重新上傳")
+with st.sidebar:
+    st.title("🔐 管理者")
 
-admin_upload = st.file_uploader(
-    "選擇要加入舊照片庫的圖片",
-    type=["jpg", "jpeg", "png"],
-    key="admin_uploader"
-)
+    admin_upload = st.file_uploader(
+        "新增舊照片到資料庫",
+        type=["jpg", "jpeg", "png"]
+    )
 
-if admin_upload:
-    save_path = os.path.join(DB_DIR, admin_upload.name)
+    if admin_upload:
+        save_path = os.path.join(DB_DIR, admin_upload.name)
 
-    if os.path.exists(save_path):
-        st.warning("⚠️ 檔名已存在，請更換後再上傳")
-    else:
-        with open(save_path, "wb") as f:
-            f.write(admin_upload.getbuffer())
+        if os.path.exists(save_path):
+            st.warning("檔名已存在")
+        else:
+            with open(save_path, "wb") as f:
+                f.write(admin_upload.getbuffer())
 
-        st.success(f"✅ 已加入舊照片庫：{admin_upload.name}")
-        st.cache_data.clear()
-        st.rerun()
-
-st.markdown('</div>', unsafe_allow_html=True)
-
-
-
+            st.success("已加入舊照片庫")
+            st.cache_data.clear()
+            st.rerun()
 
 
