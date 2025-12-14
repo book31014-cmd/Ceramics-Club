@@ -27,8 +27,6 @@ if admin_upload:
         # 清除快取，強制重新計算特徵
         st.cache_data.clear()
 
-        # ✅ 新版 Streamlit 正確寫法
-        st.rerun()
-
+      
 
 
