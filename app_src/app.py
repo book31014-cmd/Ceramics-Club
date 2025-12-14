@@ -13,7 +13,7 @@ import shutil
 # ==============================
 DB_DIR = "app_src/Photos"
 MODEL_NAME = "clip-ViT-B-32-multilingual-v1"
-DEVICE = "cpu"   # 🚨 Streamlit Cloud 一律用 CPU
+DEVICE = "cpu"
 
 st.set_page_config(page_title="AI 圖片比對助手", layout="centered")
 st.title("🖼️ AI 圖片相似度比對器")
@@ -30,7 +30,7 @@ def load_model():
 model = load_model()
 
 # ==============================
-# 3. EXIF 時間讀取
+# 3. EXIF 時間
 # ==============================
 def get_exif_time(image_path):
     try:
@@ -50,7 +50,7 @@ def get_exif_time(image_path):
         return "未知時間"
 
 # ==============================
-# 4. 載入資料庫圖片並編碼（只做一次）
+# 4. 載入資料庫圖片（只算一次）
 # ==============================
 @st.cache_data
 def load_database():
@@ -81,9 +81,9 @@ def load_database():
         progress.progress((i + 1) / len(image_paths))
     progress.empty()
 
-    # 🚨 關鍵修正：CLIP 圖片 encode 一定要用 images=
+    # ✅ 關鍵：舊版 sentence-transformers 只能用「位置參數」
     features = model.encode(
-        images=images,
+        images,
         convert_to_tensor=True
     )
 
@@ -115,9 +115,9 @@ if uploaded_file:
         with st.spinner("AI 正在進行相似度比對..."):
             query_img = Image.open(temp_path).convert("RGB")
 
-            # 🚨 關鍵修正：圖片一定要用 images=[...]
+            # ✅ 一定要是 list
             query_feature = model.encode(
-                images=[query_img],
+                [query_img],
                 convert_to_tensor=True
             )
 
@@ -145,18 +145,17 @@ if uploaded_file:
             st.progress(int(best_score * 100))
             st.write(f"**{best_score:.4f}**")
 
-        st.divider()
-
         if best_score > 0.85:
-            st.success("🎉 高度相似：極可能是同一作品或場景")
+            st.success("🎉 高度相似")
         elif best_score > 0.7:
-            st.warning("🤔 中度相似：風格或構圖相近")
+            st.warning("🤔 中度相似")
         else:
-            st.info("🆕 相似度低：可能是全新作品")
+            st.info("🆕 相似度低")
 
     except Exception as e:
         st.error(f"處理照片時發生錯誤：{e}")
 
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
+
 
