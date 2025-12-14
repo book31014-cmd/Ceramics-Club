@@ -9,10 +9,11 @@ from datetime import datetime
 import shutil
 
 # ==============================
-# 基本設定
+# 基本設定（免費版安全）
 # ==============================
 DB_DIR = "app_src/Photos"
 DEVICE = "cpu"
+MAX_DB_IMAGES = 9   # 🔴 免費版關鍵限制（一定要有）
 
 st.set_page_config(
     page_title="AI 圖片相似度比對",
@@ -20,13 +21,11 @@ st.set_page_config(
 )
 
 # ==============================
-# 🎨 極簡 UI 樣式（乾淨版）
+# 🎨 極簡 UI
 # ==============================
 st.markdown("""
 <style>
-.stApp {
-    background: #f5f7fb;
-}
+.stApp { background: #f5f7fb; }
 
 .card {
     background: white;
@@ -36,15 +35,12 @@ st.markdown("""
     margin-bottom: 1.2rem;
 }
 
-h1 {
-    font-size: 1.8rem;
-    margin-bottom: 0.3rem;
-}
+h1 { font-size: 1.8rem; margin-bottom: 0.3rem; }
 </style>
 """, unsafe_allow_html=True)
 
 # ==============================
-# 🏠 首頁
+# 首頁
 # ==============================
 st.markdown("""
 <div class="card">
@@ -54,7 +50,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==============================
-# 載入 CLIP 模型
+# 載入 CLIP 模型（只一次）
 # ==============================
 @st.cache_resource
 def load_clip():
@@ -90,7 +86,7 @@ def get_exif_time(image_path):
         return "未知時間"
 
 # ==============================
-# 載入資料庫圖片特徵
+# 載入舊照片特徵（限制數量）
 # ==============================
 @st.cache_data
 def load_database():
@@ -103,6 +99,9 @@ def load_database():
         glob.glob(os.path.join(DB_DIR, "*.jpeg")) +
         glob.glob(os.path.join(DB_DIR, "*.png"))
     )
+
+    # 🔴 免費版保命線
+    paths = paths[:MAX_DB_IMAGES]
 
     if not paths:
         st.error("Photos 資料夾沒有圖片")
@@ -128,12 +127,12 @@ db_features, db_paths = load_database()
 
 st.markdown(f"""
 <div class="card">
-✅ 已載入 <b>{len(db_paths)}</b> 張舊照片
+✅ 已載入 <b>{len(db_paths)}</b> 張舊照片（展示模式）
 </div>
 """, unsafe_allow_html=True)
 
 # ==============================
-# 📤 上傳新照片（唯一一個上傳框）
+# 📤 上傳新照片（唯一上傳框）
 # ==============================
 st.markdown('<div class="card">', unsafe_allow_html=True)
 st.subheader("📤 上傳照片進行比對")
@@ -190,27 +189,29 @@ if uploaded:
         shutil.rmtree(temp_dir, ignore_errors=True)
 
 # ==============================
-# 🔐 Sidebar 管理者功能（乾淨）
+# 🔐 Sidebar 管理者（免費版友善）
 # ==============================
 with st.sidebar:
     st.title("🔐 管理者")
 
     admin_upload = st.file_uploader(
-        "新增舊照片到資料庫",
+        "新增舊照片（最多 10 張）",
         type=["jpg", "jpeg", "png"]
     )
 
     if admin_upload:
-        save_path = os.path.join(DB_DIR, admin_upload.name)
-
-        if os.path.exists(save_path):
-            st.warning("檔名已存在")
+        if len(db_paths) >= MAX_DB_IMAGES:
+            st.warning("已達展示上限（10 張）")
         else:
-            with open(save_path, "wb") as f:
-                f.write(admin_upload.getbuffer())
+            save_path = os.path.join(DB_DIR, admin_upload.name)
+            if os.path.exists(save_path):
+                st.warning("檔名已存在")
+            else:
+                with open(save_path, "wb") as f:
+                    f.write(admin_upload.getbuffer())
 
-            st.success("已加入舊照片庫")
-            st.cache_data.clear()
-            st.rerun()
+                st.success("已加入舊照片庫")
+                st.cache_data.clear()
+                st.rerun()
 
 
