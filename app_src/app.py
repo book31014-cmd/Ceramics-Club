@@ -22,17 +22,66 @@ st.set_page_config(page_title="AI 圖片相似度比對", layout="centered")
 # ==============================
 st.markdown("""
 <style>
-.stApp { background: #f5f7fb; }
-.card {
-  background: #fff;
-  padding: 1.3rem 1.5rem;
-  border-radius: 14px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
-  margin-bottom: 1.0rem;
+/* ===== 全站深色漸層背景 ===== */
+.stApp {
+    background: radial-gradient(
+        circle at top left,
+        #1f2933 0%,
+        #0f172a 45%,
+        #020617 100%
+    );
+    color: #e5e7eb;
 }
-h1 { font-size: 1.8rem; margin: 0 0 .25rem 0; }
-.small { color: #6b7280; font-size: 0.95rem; }
+
+/* ===== 卡片樣式（深色卡片） ===== */
+.card {
+    background: rgba(17, 24, 39, 0.85);  /* 深藍灰 */
+    backdrop-filter: blur(8px);
+    padding: 1.5rem 1.6rem;
+    border-radius: 16px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+    margin-bottom: 1.3rem;
+    border: 1px solid rgba(255,255,255,0.06);
+}
+
+/* ===== 標題 ===== */
+h1, h2, h3 {
+    color: #f9fafb;
+    font-weight: 700;
+}
+
+/* ===== 說明文字 ===== */
+.small, p, label {
+    color: #cbd5f5;
+}
+
+/* ===== Streamlit 元件微調 ===== */
+section[data-testid="stFileUploader"] {
+    background: rgba(15, 23, 42, 0.9);
+    border-radius: 12px;
+    padding: 1rem;
+    border: 1px dashed rgba(148, 163, 184, 0.35);
+}
+
+/* 上傳區文字 */
+section[data-testid="stFileUploader"] * {
+    color: #e5e7eb !important;
+}
+
+/* Sidebar 深色 */
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #020617, #020617);
+    border-right: 1px solid rgba(255,255,255,0.05);
+}
+
+/* 成功 / 警告文字 */
+.stAlert {
+    background: rgba(2, 6, 23, 0.85);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+}
 </style>
+
 """, unsafe_allow_html=True)
 
 st.markdown("""
@@ -219,6 +268,7 @@ if admin_upload:
             st.rerun()
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 
