@@ -1,0 +1,7 @@
+torch
+Pillow
+exifread
+glob2
+sentence-transformers
+streamlit
+
