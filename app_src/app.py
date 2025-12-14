@@ -13,7 +13,7 @@ import shutil
 # ==============================
 DB_DIR = "app_src/Photos"
 DEVICE = "cpu"
-MAX_DB_IMAGES = 9   # 🔴 免費版關鍵限制（一定要有）
+MAX_DB_IMAGES = 3   # 🔴 免費版關鍵限制（一定要有）
 
 st.set_page_config(
     page_title="AI 圖片相似度比對",
@@ -213,5 +213,6 @@ with st.sidebar:
                 st.success("已加入舊照片庫")
                 st.cache_data.clear()
                 st.rerun()
+
 
 
