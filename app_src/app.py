@@ -174,7 +174,9 @@ if admin_upload:
         st.cache_data.clear()
 
         # 重新執行 App
-        st.experimental_rerun()
+        st.rerun()
+
+
 
 
 
