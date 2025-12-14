@@ -10,7 +10,7 @@ import shutil
 
 # --- 1. 設定 (針對雲端環境修改) ---
 # 注意：請確保 GitHub 上您的 app.py 同層目錄下真的有一個叫做 "舊照片庫" 的資料夾
-DB_DIR = "舊照片庫" 
+DB_DIR = "photos" 
 MODEL_NAME = "clip-ViT-B-32"
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -177,3 +177,4 @@ if uploaded_file is not None:
         # 清理暫存檔案 (保持環境整潔)
         if os.path.exists(temp_dir):
             shutil.rmtree(temp_dir)
+
